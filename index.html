@@ -37,6 +37,67 @@
   .screen.active { opacity: 1; pointer-events: all; }
 
   /* ══════════════════════════════════
+     SCREEN 0 ▸ パスワード認証
+  ══════════════════════════════════ */
+  #screen-login {
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(46,139,87,.3) 0%, transparent 60%),
+      var(--green-deep);
+  }
+  .login-box {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 22px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 24px;
+    padding: 48px 52px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 40px rgba(0,0,0,.4);
+    width: min(90vw, 400px);
+  }
+  .login-icon { font-size: 48px; line-height: 1; }
+  .login-title {
+    font-family: 'Noto Serif JP', serif; font-weight: 700;
+    font-size: 20px; letter-spacing: .1em;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .login-sub {
+    font-size: 13px; color: rgba(255,255,255,.38);
+    letter-spacing: .08em; margin-top: -8px;
+  }
+  .login-input {
+    width: 100%; padding: 16px 20px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 12px;
+    color: var(--cream); font-size: 22px;
+    font-family: 'Noto Sans JP', sans-serif;
+    letter-spacing: .35em; text-align: center;
+    outline: none;
+    transition: border-color .2s, background .2s;
+  }
+  .login-input::placeholder { color: rgba(255,255,255,.22); letter-spacing: .08em; font-size: 14px; }
+  .login-input:focus { border-color: var(--gold); background: rgba(255,255,255,.12); }
+  .login-btn {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--green-deep); border: none; border-radius: 12px;
+    font-family: 'Noto Serif JP', serif; font-weight: 700;
+    font-size: 17px; letter-spacing: .15em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(201,168,76,.45);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .login-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,168,76,.6); }
+  .login-btn:active { transform: scale(.97); }
+  .login-error {
+    font-size: 13px; color: #ff8080; min-height: 18px;
+    opacity: 0; transition: opacity .3s; letter-spacing: .05em;
+  }
+  .login-error.show { opacity: 1; }
+
+  /* ══════════════════════════════════
      SCREEN 1 ▸ タイトル
   ══════════════════════════════════ */
   #screen-title {
@@ -311,8 +372,20 @@
 </head>
 <body>
 
+<!-- ══ SCREEN 0: ログイン ══ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-icon">⛳</div>
+    <div class="login-title">ゴルフコンペ 組み合わせ発表</div>
+    <div class="login-sub">パスワードを入力してください</div>
+    <input class="login-input" id="login-input" type="password" placeholder="パスワード" autocomplete="off" onkeydown="if(event.key==='Enter') doLogin()">
+    <div class="login-error" id="login-error">パスワードが違います</div>
+    <button class="login-btn" onclick="doLogin()">入 場</button>
+  </div>
+</div>
+
 <!-- ══ SCREEN 1: タイトル ══ -->
-<div id="screen-title" class="screen active">
+<div id="screen-title" class="screen">
 
   <!-- ★ 設定ギア：タイトル画面のみ・左上 -->
   <button class="title-gear" onclick="openModal()" title="データ編集">⚙️</button>
@@ -365,6 +438,33 @@
 </div>
 
 <script>
+/* ══════════════════════════════════════════════
+   ★ パスワード設定（ここを変更してください）
+══════════════════════════════════════════════ */
+const PASSWORD = 'golf';
+
+function doLogin() {
+  const val = document.getElementById('login-input').value;
+  const err = document.getElementById('login-error');
+  if (val === PASSWORD) {
+    // セッション中は認証済みとして保持
+    sessionStorage.setItem('auth', '1');
+    showScreen('screen-title');
+  } else {
+    err.classList.add('show');
+    document.getElementById('login-input').value = '';
+    document.getElementById('login-input').focus();
+    // 3秒後にエラーを消す
+    setTimeout(() => err.classList.remove('show'), 3000);
+  }
+}
+
+// ページリロード時：認証済みならタイトルへ
+if (sessionStorage.getItem('auth') === '1') {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-title').classList.add('active');
+}
+
 /* ══════════════════════════════════════════════
    確定済みデータ（42組・プロ名のみ）
    実際のデータに差し替えてください
