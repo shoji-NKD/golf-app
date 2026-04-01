@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ゴルフコンペ 組み合わせ発表</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-deep:  #0d2e1a;
+    --green-mid:   #1a5c34;
+    --green-light: #2e8b57;
+    --gold:        #c9a84c;
+    --gold-light:  #e8c96e;
+    --gold-pale:   #f5e9c0;
+    --cream:       #f8f6f0;
+    --text:        #111;
+    --shadow:      0 4px 20px rgba(0,0,0,0.32);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--green-deep);
+    color: var(--cream);
+    height: 100dvh; width: 100vw;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* ══════════════════════════════════
+     SCREEN 1 ▸ タイトル
+  ══════════════════════════════════ */
+  #screen-title {
+    background:
+      radial-gradient(ellipse at 30% 38%, rgba(46,139,87,.38) 0%, transparent 58%),
+      radial-gradient(ellipse at 72% 70%, rgba(201,168,76,.13) 0%, transparent 50%),
+      var(--green-deep);
+    overflow: hidden;
+  }
+  #screen-title::before {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(
+      90deg, transparent, transparent 44px,
+      rgba(255,255,255,.013) 44px, rgba(255,255,255,.013) 88px);
+  }
+
+  /* ★ 設定ギアボタン（タイトル画面・左上固定） */
+  .title-gear {
+    position: absolute; top: 20px; left: 20px;
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 22px; line-height: 1;
+    transition: background .2s, transform .35s;
+    z-index: 20;
+  }
+  .title-gear:hover  { background: rgba(255,255,255,.18); }
+  .title-gear:active { transform: rotate(60deg); }
+
+  /* 回転リング */
+  .t-ring-wrap {
+    position: relative; width: 140px; height: 140px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .t-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 3px solid transparent;
+    background: conic-gradient(var(--gold) 0deg, transparent 90deg, var(--gold-light) 180deg, transparent 270deg, var(--gold) 360deg) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out; mask-composite: exclude;
+    animation: spinRing 4s linear infinite;
+  }
+  .t-ring2 {
+    position: absolute; inset: 10px; border-radius: 50%;
+    border: 1px solid rgba(201,168,76,.35);
+  }
+  @keyframes spinRing { to { transform: rotate(360deg); } }
+
+  .t-emblem {
+    width: 90px; height: 90px;
+    background: radial-gradient(circle at 38% 35%, rgba(201,168,76,.18), transparent 70%);
+    border: 2px solid rgba(201,168,76,.5); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    animation: emblemPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes emblemPulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(201,168,76,.4); transform:scale(1); }
+    50%      { box-shadow:0 0 30px 8px rgba(201,168,76,.22); transform:scale(1.04); }
+  }
+  .t-icon { font-size: 44px; line-height: 1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+
+  .t-kicker {
+    font-size: clamp(11px,1.6vw,14px); font-weight: 300;
+    letter-spacing: .55em; color: var(--gold); margin-bottom: 10px;
+    animation: fadeUp .9s ease both .2s;
+  }
+  .t-heading {
+    font-family: 'Noto Serif JP', serif; font-weight: 900;
+    font-size: clamp(32px,5.5vw,58px);
+    letter-spacing: .08em; line-height: 1.15; text-align: center;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-pale) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 6px; animation: fadeUp .9s ease both .4s;
+  }
+  .t-sub {
+    font-size: clamp(12px,1.4vw,14px); color: rgba(255,255,255,.42);
+    letter-spacing: .2em; margin-bottom: 48px;
+    animation: fadeUp .9s ease both .6s;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(18px); }
+    to   { opacity:1; transform:none; }
+  }
+  .btn-start {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--green-deep); border: none; border-radius: 60px;
+    padding: 22px 72px;
+    font-family: 'Noto Serif JP', serif; font-weight: 700;
+    font-size: clamp(20px,2.6vw,26px); letter-spacing: .18em;
+    cursor: pointer;
+    box-shadow: 0 6px 32px rgba(201,168,76,.52), inset 0 1px 0 rgba(255,255,255,.4);
+    transition: transform .18s, box-shadow .18s;
+    animation: fadeUp .9s ease both .7s, btnGlow 2.2s ease-in-out 1.6s infinite;
+  }
+  @keyframes btnGlow {
+    0%,100% { box-shadow: 0 6px 32px rgba(201,168,76,.52); }
+    50%      { box-shadow: 0 8px 48px rgba(201,168,76,.82), 0 0 0 6px rgba(201,168,76,.12); }
+  }
+  .btn-start:hover  { transform: translateY(-3px) scale(1.04); }
+  .btn-start:active { transform: scale(.97); }
+  .t-hint {
+    margin-top: 32px; font-size: 13px; color: rgba(255,255,255,.28); letter-spacing: .12em;
+    animation: fadeUp .9s ease both .85s;
+  }
+  .t-star {
+    position: absolute; border-radius: 50%;
+    background: rgba(201,168,76,.25);
+    animation: floatStar linear infinite;
+  }
+  @keyframes floatStar {
+    0%   { transform:translateY(0) scale(1); opacity:.6; }
+    50%  { opacity:.2; }
+    100% { transform:translateY(-100vh) scale(.3); opacity:0; }
+  }
+
+  /* ══════════════════════════════════
+     SCREEN 2 ▸ アニメーション
+  ══════════════════════════════════ */
+  #screen-anim { background: #1a5c34; }
+  #golf-canvas { width: 100%; height: 100%; display: block; }
+
+  /* ══════════════════════════════════
+     SCREEN 3 ▸ 結果
+  ══════════════════════════════════ */
+  #screen-result {
+    background:
+      radial-gradient(ellipse at 18% 16%, rgba(46,139,87,.25) 0%, transparent 50%),
+      var(--green-deep);
+    justify-content: flex-start; overflow: hidden;
+  }
+
+  /* ヘッダー */
+  .r-header {
+    width: 100%; flex-shrink: 0;
+    padding: 14px 20px 12px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid rgba(201,168,76,.22);
+    background: rgba(13,46,26,.75); backdrop-filter: blur(8px);
+    position: relative; z-index: 10;
+  }
+  .r-title {
+    flex: 1;
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(17px,2.2vw,22px); font-weight: 700;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: .1em;
+  }
+  .r-meta { font-size: 12px; color: rgba(255,255,255,.38); letter-spacing: .05em; text-align: right; }
+
+  /* ★ HOMEアイコンボタン（右上ヘッダー内） */
+  .btn-home {
+    width: 40px; height: 40px; flex-shrink: 0;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 20px; line-height: 1;
+    transition: background .2s;
+  }
+  .btn-home:hover  { background: rgba(255,255,255,.18); }
+  .btn-home:active { transform: scale(.93); }
+
+  /* スクロール */
+  .r-scroll {
+    width: 100%; flex: 1;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .r-scroll::-webkit-scrollbar { width: 5px; }
+  .r-scroll::-webkit-scrollbar-track { background: transparent; }
+  .r-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,.45); border-radius: 3px; }
+
+  /* 2カラムグリッド */
+  .r-grid {
+    padding: 16px 18px 28px;
+    display: grid; grid-template-columns: repeat(2,1fr); gap: 14px;
+    align-content: start;
+  }
+
+  /* ★ カード：プロ名1名のみ表示 */
+  .g-card {
+    background: #fff; border-radius: 14px; overflow: hidden;
+    box-shadow: var(--shadow);
+    opacity: 0; transform: translateY(18px) scale(.97);
+    transition: opacity .38s ease, transform .38s ease;
+  }
+  .g-card.show { opacity: 1; transform: none; }
+
+  /* カードヘッダー（組番号・ホール） */
+  .g-head {
+    background: linear-gradient(118deg, #2e8b57 0%, #0d2e1a 100%);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .g-badge {
+    width: 48px; height: 48px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--green-deep); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif JP', serif; font-weight: 900; font-size: 18px;
+  }
+  .g-head-info { flex: 1; }
+  .g-group-name {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 19px; font-weight: 700; color: #fff; letter-spacing: .06em;
+  }
+  .g-hole { font-size: 12px; color: var(--gold-light); margin-top: 3px; letter-spacing: .07em; }
+
+  /* カードボディ：プロ名エリア */
+  .g-body {
+    padding: 16px 18px 18px;
+    display: flex; align-items: center; gap: 12px;
+    background: #fffbf0;
+  }
+  .g-pro-badge {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--green-deep);
+    font-size: 11px; font-weight: 900; letter-spacing: .08em;
+    padding: 4px 11px; border-radius: 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    box-shadow: 0 2px 8px rgba(201,168,76,.4);
+  }
+  /* ★ プロ名：大きく・くっきり */
+  .g-pro-name {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 26px; font-weight: 900;
+    color: #7a5200;
+    letter-spacing: .04em; line-height: 1.2;
+  }
+
+  /* 管理モーダル */
+  .modal-wrap {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,.68);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+    backdrop-filter: blur(4px);
+  }
+  .modal-wrap.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #fff; color: var(--text); border-radius: 18px; padding: 28px;
+    width: min(88vw,560px); max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    transform: translateY(16px) scale(.97); transition: transform .3s;
+  }
+  .modal-wrap.open .modal { transform: none; }
+  .modal h2 { font-family:'Noto Serif JP',serif; font-size:18px; font-weight:700; color:var(--green-deep); margin-bottom:4px; }
+  .modal p  { font-size:12px; color:#666; margin-bottom:16px; line-height:1.72; }
+  .modal textarea {
+    width:100%; height:240px; border:1px solid #ddd; border-radius:8px;
+    padding:12px; font-size:12px; font-family:monospace; resize:vertical;
+    outline:none; color:#222; line-height:1.6;
+  }
+  .modal textarea:focus { border-color:var(--green-light); box-shadow:0 0 0 2px rgba(46,139,87,.15); }
+  .modal-btns { display:flex; gap:10px; margin-top:16px; justify-content:flex-end; }
+  .mbtn-cancel { background:#eee; color:#444; border:none; border-radius:8px; padding:10px 22px; font-size:14px; cursor:pointer; }
+  .mbtn-apply  { background:var(--green-mid); color:#fff; border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer; }
+
+  /* パーティクル */
+  #particles { position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden; }
+  .pt { position:absolute; border-radius:50%; animation:ptFall 1.8s ease-out forwards; }
+  @keyframes ptFall {
+    0%   { transform:translateY(0) rotate(0deg) scale(1); opacity:1; }
+    100% { transform:translateY(150px) rotate(440deg) scale(0); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ SCREEN 1: タイトル ══ -->
+<div id="screen-title" class="screen active">
+
+  <!-- ★ 設定ギア：タイトル画面のみ・左上 -->
+  <button class="title-gear" onclick="openModal()" title="データ編集">⚙️</button>
+
+  <div class="t-ring-wrap">
+    <div class="t-ring"></div>
+    <div class="t-ring2"></div>
+    <div class="t-emblem"><span class="t-icon">⛳</span></div>
+  </div>
+  <div class="t-kicker">2025 Annual Golf Tournament</div>
+  <div class="t-heading">組み合わせ発表</div>
+  <div class="t-sub">令和7年度 春季ゴルフコンペ</div>
+  <button class="btn-start" onclick="startAnim()">抽選スタート</button>
+  <div class="t-hint">タップして発表を開始します</div>
+</div>
+
+<!-- ══ SCREEN 2: アニメーション（テキストなし） ══ -->
+<div id="screen-anim" class="screen">
+  <canvas id="golf-canvas"></canvas>
+</div>
+
+<!-- ══ SCREEN 3: 結果 ══ -->
+<div id="screen-result" class="screen">
+  <div class="r-header">
+    <div class="r-title">⛳ 組み合わせ発表</div>
+    <div class="r-meta" id="r-meta"></div>
+    <!-- ★ HOMEアイコンのみ -->
+    <button class="btn-home" onclick="goTitle()" title="最初に戻る">🏠</button>
+  </div>
+  <div class="r-scroll">
+    <div class="r-grid" id="r-grid"></div>
+  </div>
+</div>
+
+<div id="particles"></div>
+
+<!-- 管理モーダル（タイトル画面ギアから起動） -->
+<div class="modal-wrap" id="modal-wrap" onclick="clickOutside(event)">
+  <div class="modal">
+    <h2>⚙️ データ編集（CSV形式）</h2>
+    <p>1行目はヘッダー行です（変更不要）。<br>
+       形式：<code>組番号, スタートホール, プロ名</code><br>
+       各組に対してプロ1名を設定してください。</p>
+    <textarea id="csv-ta"></textarea>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="mbtn-apply"  onclick="applyCSV()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   確定済みデータ（42組・プロ名のみ）
+   実際のデータに差し替えてください
+══════════════════════════════════════════════ */
+const GROUP_DATA = [
+  { no:  1, hole:'1番ホール スタート',  pro:'青木 功プロ'      },
+  { no:  2, hole:'1番ホール スタート',  pro:'岡本 綾子プロ'    },
+  { no:  3, hole:'10番ホール スタート', pro:'尾崎 将司プロ'    },
+  { no:  4, hole:'10番ホール スタート', pro:'中嶋 常幸プロ'    },
+  { no:  5, hole:'1番ホール スタート',  pro:'倉本 昌弘プロ'    },
+  { no:  6, hole:'1番ホール スタート',  pro:'丸山 茂樹プロ'    },
+  { no:  7, hole:'10番ホール スタート', pro:'宮里 藍プロ'      },
+  { no:  8, hole:'10番ホール スタート', pro:'横峯 さくらプロ'  },
+  { no:  9, hole:'1番ホール スタート',  pro:'片山 晋呉プロ'    },
+  { no: 10, hole:'1番ホール スタート',  pro:'伊沢 利光プロ'    },
+  { no: 11, hole:'10番ホール スタート', pro:'田中 秀道プロ'    },
+  { no: 12, hole:'10番ホール スタート', pro:'深堀 圭一郎プロ'  },
+  { no: 13, hole:'1番ホール スタート',  pro:'室田 淳プロ'      },
+  { no: 14, hole:'1番ホール スタート',  pro:'諸藤 将次プロ'    },
+  { no: 15, hole:'10番ホール スタート', pro:'池田 勇太プロ'    },
+  { no: 16, hole:'10番ホール スタート', pro:'小田 孔明プロ'    },
+  { no: 17, hole:'1番ホール スタート',  pro:'宮本 勝昌プロ'    },
+  { no: 18, hole:'1番ホール スタート',  pro:'谷口 徹プロ'      },
+  { no: 19, hole:'10番ホール スタート', pro:'武藤 俊憲プロ'    },
+  { no: 20, hole:'10番ホール スタート', pro:'平塚 哲二プロ'    },
+  { no: 21, hole:'1番ホール スタート',  pro:'近藤 智弘プロ'    },
+  { no: 22, hole:'1番ホール スタート',  pro:'藤田 寛之プロ'    },
+  { no: 23, hole:'10番ホール スタート', pro:'手嶋 多一プロ'    },
+  { no: 24, hole:'10番ホール スタート', pro:'上井 邦裕プロ'    },
+  { no: 25, hole:'1番ホール スタート',  pro:'星野 英正プロ'    },
+  { no: 26, hole:'1番ホール スタート',  pro:'白木 正一プロ'    },
+  { no: 27, hole:'10番ホール スタート', pro:'岩田 寛プロ'      },
+  { no: 28, hole:'10番ホール スタート', pro:'甲斐 慎太郎プロ'  },
+  { no: 29, hole:'1番ホール スタート',  pro:'小泉 洋人プロ'    },
+  { no: 30, hole:'1番ホール スタート',  pro:'高山 忠洋プロ'    },
+  { no: 31, hole:'10番ホール スタート', pro:'宇佐美 祐樹プロ'  },
+  { no: 32, hole:'10番ホール スタート', pro:'貞方 章男プロ'    },
+  { no: 33, hole:'1番ホール スタート',  pro:'竹本 直哉プロ'    },
+  { no: 34, hole:'1番ホール スタート',  pro:'木下 稜介プロ'    },
+  { no: 35, hole:'10番ホール スタート', pro:'桂川 有人プロ'    },
+  { no: 36, hole:'10番ホール スタート', pro:'石川 遼プロ'      },
+  { no: 37, hole:'1番ホール スタート',  pro:'松山 英樹プロ'    },
+  { no: 38, hole:'1番ホール スタート',  pro:'渋野 日向子プロ'  },
+  { no: 39, hole:'10番ホール スタート', pro:'笹生 優花プロ'    },
+  { no: 40, hole:'10番ホール スタート', pro:'西村 優菜プロ'    },
+  { no: 41, hole:'1番ホール スタート',  pro:'稲森 佑貴プロ'    },
+  { no: 42, hole:'1番ホール スタート',  pro:'金谷 拓実プロ'    },
+];
+
+/* ── 画面切り替え ── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goTitle() { showScreen('screen-title'); }
+
+/* ── 浮かぶ星（タイトル画面） ── */
+(function spawnStars(){
+  const screen = document.getElementById('screen-title');
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement('div');
+    s.className = 't-star';
+    const sz = Math.random()*10+4;
+    s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${80+Math.random()*20}%;animation-duration:${Math.random()*8+6}s;animation-delay:${Math.random()*6}s;`;
+    screen.appendChild(s);
+  }
+})();
+
+/* ══════════════════════════════════════════════
+   Canvas アニメーション（テキストなし・賑やか）
+══════════════════════════════════════════════ */
+const ROLL_MS  = 4200;
+const CUPIN_MS = 800;
+
+function startAnim() {
+  showScreen('screen-anim');
+  const canvas = document.getElementById('golf-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const W = canvas.width, H = canvas.height;
+
+  const cx = W*.5, cy = H*.5, cupR = 26;
+  const sx = -60, sy = H*.9;
+  const cp1x = W*.15, cp1y = -H*.05;
+  const cp2x = W*.68, cp2y = H*.08;
+
+  let t0=null, phase='roll', cinT0=null;
+  const BOUNCES = [{t:.3,h:.06},{t:.55,h:.035},{t:.74,h:.018}];
+  const sparks = [];
+  let lastBounce = -1;
+
+  function drawBg() {
+    const g=ctx.createRadialGradient(W*.4,H*.45,0,W*.4,H*.45,Math.max(W,H)*.85);
+    g.addColorStop(0,'#35a468'); g.addColorStop(.5,'#2e8b57'); g.addColorStop(1,'#1a5c34');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.save(); ctx.globalAlpha=.042;
+    for (let x=-H; x<W+H; x+=72) {
+      ctx.fillStyle='#000'; ctx.beginPath();
+      ctx.moveTo(x,0); ctx.lineTo(x+36,0); ctx.lineTo(x+36+H,H); ctx.lineTo(x+H,H); ctx.fill();
+    }
+    ctx.restore();
+    const v=ctx.createRadialGradient(W/2,H/2,H*.22,W/2,H/2,H*.82);
+    v.addColorStop(0,'transparent'); v.addColorStop(1,'rgba(0,0,0,.38)');
+    ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+  }
+
+  function drawCup(sc=1) {
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx+4,cy+6,cupR*1.4*sc,cupR*.5*sc,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fill(); ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,cupR*sc,0,Math.PI*2);
+    const g=ctx.createRadialGradient(cx-5,cy-5,2,cx,cy,cupR*sc);
+    g.addColorStop(0,'#303030'); g.addColorStop(1,'#000');
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle='#999'; ctx.lineWidth=2.5*sc; ctx.stroke(); ctx.restore();
+    if (sc>.2) {
+      const ph=80*sc;
+      ctx.save();
+      ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=2.5*sc;
+      ctx.beginPath(); ctx.moveTo(cx+2,cy-cupR*sc); ctx.lineTo(cx+2,cy-cupR*sc-ph); ctx.stroke();
+      ctx.fillStyle='#e63946';
+      ctx.beginPath();
+      ctx.moveTo(cx+2,cy-cupR*sc-ph);
+      ctx.lineTo(cx+38*sc,cy-cupR*sc-ph+13*sc);
+      ctx.lineTo(cx+2,cy-cupR*sc-ph+28*sc);
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+  }
+
+  function bez(t,p0,p1,p2,p3){ const m=1-t; return m*m*m*p0+3*m*m*t*p1+3*m*t*t*p2+t*t*t*p3; }
+
+  function bounceY(t) {
+    let off=0;
+    for (const b of BOUNCES) {
+      const dt=Math.abs(t-b.t);
+      if (dt<.09) off-=Math.sin(dt/.09*Math.PI)*H*b.h;
+    }
+    return off;
+  }
+
+  function drawBall(x,y,r=20) {
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(x+3,y+7,r*1.3,r*.45,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fill();
+    const g=ctx.createRadialGradient(x-r*.32,y-r*.32,r*.07,x,y,r);
+    g.addColorStop(0,'#fff'); g.addColorStop(.6,'#f0f0f0'); g.addColorStop(1,'#c8c8c8');
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+    ctx.save(); ctx.strokeStyle='rgba(160,160,160,.3)'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.arc(x,y,r*.6,-.5,1.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x,y,r*.6,Math.PI-.5,Math.PI+1.2); ctx.stroke(); ctx.restore();
+    ctx.fillStyle='rgba(130,130,130,.18)';
+    for(let i=0;i<6;i++){
+      const a=i/6*Math.PI*2;
+      ctx.beginPath(); ctx.arc(x+Math.cos(a)*r*.44,y+Math.sin(a)*r*.44,r*.1,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawTrail(te,bx,by) {
+    if(te<.04) return; ctx.save();
+    for(let i=1;i<=10;i++){
+      const tt=Math.max(0,te-i*.012);
+      const tx=bez(tt,sx,cp1x,cp2x,cx);
+      const ty=bez(tt,sy,cp1y,cp2y,cy)+bounceY(tt);
+      ctx.beginPath(); ctx.arc(tx,ty,20*(1-i/12),0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${.065-i*.006})`; ctx.fill();
+    }
+    if(te>.05&&te<.9){
+      ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.lineWidth=2;
+      ctx.beginPath();
+      const t2=Math.max(0,te-.06);
+      ctx.moveTo(bez(t2,sx,cp1x,cp2x,cx),bez(t2,sy,cp1y,cp2y,cy)+bounceY(t2));
+      ctx.lineTo(bx,by); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function addSparks(x,y,n=14){
+    const cols=['#c9a84c','#e8c96e','#fff','#3aaf6f','#f5e9c0','#ff6b6b'];
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2, sp=Math.random()*6+2;
+      sparks.push({x,y,r:Math.random()*4+2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:35+Math.random()*20,maxLife:55,col:cols[i%cols.length]});
+    }
+  }
+  function drawSparks(){
+    sparks.forEach(s=>{
+      s.x+=s.vx; s.y+=s.vy; s.vy+=.32; s.life--;
+      ctx.save(); ctx.globalAlpha=s.life/s.maxLife;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fillStyle=s.col; ctx.fill(); ctx.restore();
+    });
+    for(let i=sparks.length-1;i>=0;i--){ if(sparks[i].life<=0) sparks.splice(i,1); }
+  }
+  function checkBounce(te){
+    BOUNCES.forEach((b,i)=>{
+      if(lastBounce<i&&te>=b.t){
+        addSparks(bez(b.t,sx,cp1x,cp2x,cx),bez(b.t,sy,cp1y,cp2y,cy),8);
+        lastBounce=i;
+      }
+    });
+  }
+
+  function spawnParticles(){
+    const box=document.getElementById('particles');
+    const cols=['#c9a84c','#e8c96e','#f5e9c0','#fff','#3aaf6f','#ffd700','#ff6b6b'];
+    for(let i=0;i<56;i++){
+      setTimeout(()=>{
+        const p=document.createElement('div'); p.className='pt';
+        const sz=Math.random()*14+5;
+        p.style.cssText=`left:${cx/W*100+(Math.random()-.5)*30}%;top:${cy/H*100}%;width:${sz}px;height:${sz}px;background:${cols[i%cols.length]};animation-delay:${Math.random()*.5}s;animation-duration:${1.4+Math.random()*.8}s;`;
+        box.appendChild(p); setTimeout(()=>p.remove(),3000);
+      },i*22);
+    }
+    for(let i=0;i<3;i++) setTimeout(()=>addSparks(cx,cy,22),i*180);
+  }
+
+  function frame(ts){
+    if(!t0) t0=ts;
+    const el=ts-t0;
+    ctx.clearRect(0,0,W,H); drawBg(); drawSparks();
+
+    if(phase==='roll'){
+      const t=Math.min(el/ROLL_MS,1);
+      const te=1-Math.pow(1-t,2.6);
+      const bx=bez(te,sx,cp1x,cp2x,cx);
+      const by=bez(te,sy,cp1y,cp2y,cy)+bounceY(te);
+      checkBounce(te);
+      drawCup(); drawTrail(te,bx,by); drawBall(bx,by);
+      // ※ テキストなし
+      if(t>=1){ phase='cupin'; cinT0=ts; spawnParticles(); }
+      requestAnimationFrame(frame);
+
+    } else if(phase==='cupin'){
+      const ct=Math.min((ts-cinT0)/CUPIN_MS,1);
+      drawCup(1-ct*.65);
+      ctx.save(); ctx.globalAlpha=1-ct;
+      drawBall(cx,cy-(1-ct*.65)*cupR*.5,20*(1-ct));
+      ctx.restore();
+      if(ct<1){ requestAnimationFrame(frame); }
+      else { setTimeout(()=>{ buildResult(); showScreen('screen-result'); revealCards(); },450); }
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ══ 結果カード：プロ名のみ表示 ══ */
+function buildResult() {
+  const grid = document.getElementById('r-grid');
+  grid.innerHTML = '';
+  document.getElementById('r-meta').textContent =
+    new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'})
+    + `　全 ${GROUP_DATA.length} 組`;
+
+  GROUP_DATA.forEach((g, idx) => {
+    const card = document.createElement('div');
+    card.className = 'g-card'; card.id = `c${idx}`;
+    card.innerHTML = `
+      <div class="g-head">
+        <div class="g-badge">${g.no}</div>
+        <div class="g-head-info">
+          <div class="g-group-name">${g.no} 組</div>
+          <div class="g-hole">⛳ ${g.hole}</div>
+        </div>
+      </div>
+      <div class="g-body">
+        <div class="g-pro-badge">PRO</div>
+        <div class="g-pro-name">${g.pro}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function revealCards() {
+  GROUP_DATA.forEach((_,i)=>{
+    setTimeout(()=>{ document.getElementById(`c${i}`)?.classList.add('show'); }, i*48+80);
+  });
+}
+
+/* ══ 管理モーダル（タイトル画面ギアから） ══ */
+function openModal(){
+  const lines=['組番号,スタートホール,プロ名',
+    ...GROUP_DATA.map(g=>`${g.no},${g.hole},${g.pro}`)];
+  document.getElementById('csv-ta').value=lines.join('\n');
+  document.getElementById('modal-wrap').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal-wrap').classList.remove('open'); }
+function clickOutside(e){ if(e.target===document.getElementById('modal-wrap')) closeModal(); }
+function applyCSV(){
+  const rows=document.getElementById('csv-ta').value.trim().split('\n').slice(1);
+  const parsed=rows.map(row=>{
+    const c=row.split(',');
+    return { no:parseInt(c[0])||1, hole:(c[1]||'').trim(), pro:(c[2]||'').trim() };
+  });
+  GROUP_DATA.length=0; parsed.forEach(g=>GROUP_DATA.push(g));
+  closeModal();
+}
+</script>
+</body>
+</html>
