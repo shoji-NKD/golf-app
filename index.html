@@ -285,10 +285,18 @@
   .g-card {
     background: #fff; border-radius: 14px; overflow: hidden;
     box-shadow: var(--shadow);
-    opacity: 0; transform: translateY(18px) scale(.97);
-    transition: opacity .38s ease, transform .38s ease;
+    opacity: 0;
+    transform: translateY(28px) scale(.94);
+    transition: none;
   }
-  .g-card.show { opacity: 1; transform: none; }
+  .g-card.show {
+    animation: cardFloat 0.7s cubic-bezier(.34,1.48,.64,1) forwards;
+  }
+  @keyframes cardFloat {
+    0%   { opacity: 0;   transform: translateY(36px) scale(.92); }
+    40%  { opacity: 1;   }
+    100% { opacity: 1;   transform: translateY(0)    scale(1);   }
+  }
 
   /* カードヘッダー（組番号・ホール） */
   .g-head {
@@ -766,6 +774,9 @@ function startAnim() {
   const BOUNCES = [{t:.3,h:.06},{t:.55,h:.035},{t:.74,h:.018}];
   const sparks = [];
   let lastBounce = -1;
+  // ★ ボール回転角度トラッキング
+  let rollAngle = 0;
+  let prevBx = null, prevBy = null;
 
   function drawBg() {
     const g=ctx.createRadialGradient(W*.4,H*.45,0,W*.4,H*.45,Math.max(W,H)*.85);
@@ -817,21 +828,53 @@ function startAnim() {
     return off;
   }
 
-  function drawBall(x,y,r=20) {
+  function drawBall(x,y,r=20,angle=0) {
     ctx.save();
+    // 影（回転しない）
     ctx.beginPath(); ctx.ellipse(x+3,y+7,r*1.3,r*.45,0,0,Math.PI*2);
     ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fill();
+
+    // ボール本体（グラデーション）
     const g=ctx.createRadialGradient(x-r*.32,y-r*.32,r*.07,x,y,r);
     g.addColorStop(0,'#fff'); g.addColorStop(.6,'#f0f0f0'); g.addColorStop(1,'#c8c8c8');
     ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
-    ctx.save(); ctx.strokeStyle='rgba(160,160,160,.3)'; ctx.lineWidth=1.2;
-    ctx.beginPath(); ctx.arc(x,y,r*.6,-.5,1.2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(x,y,r*.6,Math.PI-.5,Math.PI+1.2); ctx.stroke(); ctx.restore();
-    ctx.fillStyle='rgba(130,130,130,.18)';
-    for(let i=0;i<6;i++){
-      const a=i/6*Math.PI*2;
-      ctx.beginPath(); ctx.arc(x+Math.cos(a)*r*.44,y+Math.sin(a)*r*.44,r*.1,0,Math.PI*2); ctx.fill();
+
+    // ★ ここから回転する要素をクリップ内で描く
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.clip(); // ボール円でクリップ
+    ctx.translate(x,y);
+    ctx.rotate(angle); // ★ 進行方向に回転
+
+    // 縫い目ライン（回転で動いて見える）
+    ctx.strokeStyle='rgba(150,150,150,.35)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.arc(0,0,r*.62,-.4,1.3); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,r*.62,Math.PI-.4,Math.PI+1.3); ctx.stroke();
+    // 横断する縫い目（90度回転）
+    ctx.strokeStyle='rgba(150,150,150,.2)';
+    ctx.beginPath(); ctx.arc(0,0,r*.55, Math.PI*.3, Math.PI*.9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,r*.55, Math.PI*1.3, Math.PI*1.9); ctx.stroke();
+
+    // ディンプル（回転で位置が変わる）
+    ctx.fillStyle='rgba(120,120,120,.16)';
+    for(let i=0;i<8;i++){
+      const a=i/8*Math.PI*2;
+      ctx.beginPath(); ctx.arc(Math.cos(a)*r*.45,Math.sin(a)*r*.45,r*.09,0,Math.PI*2); ctx.fill();
     }
+    // 内側ディンプル
+    for(let i=0;i<4;i++){
+      const a=i/4*Math.PI*2 + Math.PI/4;
+      ctx.beginPath(); ctx.arc(Math.cos(a)*r*.22,Math.sin(a)*r*.22,r*.07,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore(); // クリップ解除
+
+    // ハイライト（回転しない・常に左上）
+    ctx.save();
+    const hl = ctx.createRadialGradient(x-r*.3,y-r*.32,0,x-r*.2,y-r*.2,r*.45);
+    hl.addColorStop(0,'rgba(255,255,255,.55)'); hl.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=hl; ctx.fill();
+    ctx.restore();
+
     ctx.restore();
   }
 
@@ -907,7 +950,13 @@ function startAnim() {
       const bx=bez(te,sx,cp1x,cp2x,cx);
       const by=bez(te,sy,cp1y,cp2y,cy)+bounceY(te);
       checkBounce(te);
-      drawCup(); drawTrail(te,bx,by); drawBall(bx,by);
+      // ★ 移動距離からロール角を計算（半径rで割ると回転角）
+      if (prevBx !== null) {
+        const dist = Math.sqrt((bx-prevBx)**2 + (by-prevBy)**2);
+        rollAngle += dist / 20; // 20 = ボール半径
+      }
+      prevBx = bx; prevBy = by;
+      drawCup(); drawTrail(te,bx,by); drawBall(bx,by,20,rollAngle);
       // ※ テキストなし
       if(t>=1){ phase='cupin'; cinT0=ts; stopDrumRoll(); spawnParticles(); }
       requestAnimationFrame(frame);
@@ -916,7 +965,8 @@ function startAnim() {
       const ct=Math.min((ts-cinT0)/CUPIN_MS,1);
       drawCup(1-ct*.65);
       ctx.save(); ctx.globalAlpha=1-ct;
-      drawBall(cx,cy-(1-ct*.65)*cupR*.5,20*(1-ct));
+      // カップに吸い込まれながら回転が止まる
+      drawBall(cx,cy-(1-ct*.65)*cupR*.5,20*(1-ct), rollAngle*(1-ct));
       ctx.restore();
       if(ct<1){ requestAnimationFrame(frame); }
       else { setTimeout(()=>{ buildResult(); showScreen('screen-result'); revealCards(); },450); }
@@ -954,7 +1004,13 @@ function buildResult() {
 
 function revealCards() {
   GROUP_DATA.forEach((_,i)=>{
-    setTimeout(()=>{ document.getElementById(`c${i}`)?.classList.add('show'); }, i*48+80);
+    setTimeout(()=>{
+      const card = document.getElementById(`c${i}`);
+      if (!card) return;
+      card.classList.remove('show');
+      void card.offsetWidth;
+      card.classList.add('show');
+    }, i * 130 + 80);
   });
 }
 
